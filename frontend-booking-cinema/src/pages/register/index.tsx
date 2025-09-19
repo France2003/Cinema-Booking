@@ -21,7 +21,9 @@ function Register() {
       toast.success("Đăng ký thành công!");
       setTimeout(() => navigate("/login"), 1500);
     } catch (error: any) {
-      toast.error(error.message || "Đăng ký thất bại");
+      const msg =
+        error.response?.data?.message || error.message || "Đăng ký thất bại";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

@@ -1,16 +1,21 @@
 //Lấy dữ liệu từ req.body
-
 import { Request, Response } from "express";
 import * as AuthService from "../auths/auth.service";
 import { successResponse, errorResponse } from "../../utils/response";
 import bcrypt from "bcryptjs";
 import { UserModel } from "./auth.model";
-export const registerUser = async (req: Request, res: Response) => {
+import sendMail from "../../utils/sendMail";
+import jwt from "jsonwebtoken";
+import { resetPasswordTemplate } from "../../utils/resetPasswordTemplate";
+export const registerUser = async (req: Request, res: Response): Promise<void> => {
     try {
         const user = await AuthService.register(req.body);
         successResponse(res, { user }, "Người dùng đã đăng ký thành công");
     } catch (err: any) {
-        errorResponse(res, err.message);
+        if (err.message.includes("Email") || err.message.includes("số điện thoại")) {
+            errorResponse(res, err.message, 400);
+        }
+        errorResponse(res, "Lỗi server", 500);
     }
 };
 export const loginUser = async (req: Request, res: Response) => {
@@ -22,7 +27,7 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 };
 ///Admin
-export const Admin = async (req: Request, res: Response):Promise<void> => {
+export const Admin = async (req: Request, res: Response): Promise<void> => {
     try {
         // Kiểm tra xem admin đã tồn tại chưa
         const existingAdmin = await UserModel.findOne({ role: "admin" });
@@ -43,4 +48,51 @@ export const Admin = async (req: Request, res: Response):Promise<void> => {
         res.status(500).json({ message: error.message || "Lỗi máy chủ nội bộ" });
     }
 };
+// Gửi mail quên mật khẩu
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email } = req.body;
+        const user = await UserModel.findOne({ email });
 
+        if (!user) {
+            res.status(404).json({ message: "Email không tồn tại" });
+            return;
+        }
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, {
+            expiresIn: "15m",
+        });
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+        // Gửi mail
+        await sendMail(
+            email,
+            "Đặt lại mật khẩu",
+            resetPasswordTemplate(resetLink)
+        );
+        res.json({ message: "Đã gửi email đặt lại mật khẩu" });
+    } catch (error: any) {
+        res.status(500).json({ message: error.message || "Lỗi server" });
+    }
+};
+// Đặt lại mật khẩu
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+
+        if (!token || !password) {
+            res.status(400).json({ message: "Thiếu token hoặc mật khẩu" });
+            return;
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+        const hashed = await bcrypt.hash(password, 10);
+        await UserModel.findByIdAndUpdate(decoded.id, { password: hashed });
+        res.json({ message: "Đặt lại mật khẩu thành công" });
+    } catch (error: any) {
+        if (error.name === "TokenExpiredError") {
+            res.status(400).json({ message: "Token đã hết hạn" });
+            return;
+        }
+        res.status(500).json({ message: error.message || "Lỗi server" });
+    }
+};

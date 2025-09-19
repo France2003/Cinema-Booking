@@ -8,6 +8,7 @@ import Login from './pages/login'
 import { ToastContainer } from 'react-toastify'
 import AdminLayout from './layouts/adminlayout/adminlayout'
 import HomeAdmin from './pages/adminpages/home'
+import ForgotPassword from './pages/ForgotPassword'
 
 function App() {
 
@@ -29,6 +30,8 @@ function App() {
         <Routes>
           <Route path='/register' element={<Register />} />
           <Route path='/login' element={<Login />} />
+          <Route path='/forgot-password' element={<ForgotPassword/>} />
+          <Route path="/reset-password/:token" element={<ForgotPassword />} />
           <Route path='/' element={<DefaultLayOut />}>
             <Route index element={<HomePages />} />
           </Route>

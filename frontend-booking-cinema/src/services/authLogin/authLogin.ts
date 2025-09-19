@@ -12,3 +12,12 @@ export const refreshToken = async (refreshToken: string) => {
     });
     return response.data;
 };
+export const forgotPassword = async (email: string) => {
+    const res = await api.post("/api/auth/forgot-password", { email });
+    return res.data;
+};
+// Đặt lại mật khẩu với token
+export const resetPassword = async (token: string, password: string) => {
+    const res = await api.post(`/api/auth/reset-password/${token}`, { password });
+    return res.data;
+};

@@ -28,7 +28,9 @@ function Login() {
                 }, 1500);
             }
         } catch (error: any) {
-            toast.error(error.message || "Đăng nhập thất bại");
+            const msg =
+                error.response?.data?.message || error.message || "Đăng nhập thất bại";
+            toast.error(msg);
         } finally {
             setIsLoading(false);
         }

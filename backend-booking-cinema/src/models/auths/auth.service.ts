@@ -19,7 +19,6 @@ export const register = async (data: RegisterDTO): Promise<IUser> => {
   await user.save();
   return user;
 };
-
 export const login = async ( data: LoginDTO): Promise<{token: string;refreshToken: string;user: { role: string; email: string; phone?: string };}> => {
   const { email, password } = data;
   const user = await UserModel.findOne({ email });
